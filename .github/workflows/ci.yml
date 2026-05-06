@@ -1,0 +1,104 @@
+name: CI (OpenAI Codex plugin)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate marketplace.json + .codex-plugin/plugin.json shape
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('marketplace.json', 'utf8'));
+            if (!m.name || !Array.isArray(m.plugins) || m.plugins.length === 0) {
+              throw new Error('marketplace.json missing required fields');
+            }
+            for (const p of m.plugins) {
+              if (!p.name || !p.source) throw new Error('plugin entry missing name/source: ' + JSON.stringify(p));
+            }
+            const p = JSON.parse(fs.readFileSync('.codex-plugin/plugin.json', 'utf8'));
+            if (!p.name || !p.version) throw new Error('.codex-plugin/plugin.json missing name/version');
+            console.log('marketplace.json and .codex-plugin/plugin.json look OK.');
+          "
+
+      - name: Lint hook scripts (shellcheck — advisory)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y shellcheck jq
+          find . -name '*.sh' -not -path './skills/*' -print0 | xargs -0 shellcheck || true
+
+      - name: Smoke-check skills are present
+        run: |
+          for s in coding-standards review-check analysis-issues dependency-check; do
+            test -f "skills/$s/SKILL.md" || (echo "Missing skill: $s" && exit 1)
+          done
+          echo "All four skills present."
+
+  release:
+    needs: validate
+    if: startsWith(github.event.head_commit.message, 'release:') || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./.codex-plugin/plugin.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Codex plugin tarball
+        run: |
+          TARBALL="qualimetry-ai-app-${{ steps.version.outputs.version }}-codex.tar.gz"
+          tar --exclude='.git' --exclude='node_modules' --exclude='*.tar.gz' \
+              -czf "$TARBALL" marketplace.json .codex-plugin skills commands hooks config.snippet.toml
+          echo "tarball=$TARBALL" >> $GITHUB_ENV
+
+      - name: Extract release notes (fallback to commit message)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ -f CHANGELOG.md ]; then
+            awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md > release-notes.md
+          fi
+          if [ ! -s release-notes.md ]; then
+            echo "Release ${{ steps.version.outputs.version }}" > release-notes.md
+            echo "" >> release-notes.md
+            echo "${{ github.event.head_commit.message }}" >> release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: ${{ env.tarball }}
+
+      # Note: OpenAI's official Plugin Directory does not accept self-serve publishes
+      # at the time of this release ("coming soon" per the Codex docs). Until that
+      # API is available, distribution is via this GitHub repo as a custom Codex
+      # marketplace — users install with:
+      #
+      #     codex plugin marketplace add Qualimetry/codex-qualimetry-ai-app
+      #     codex plugin install qualimetry-ai-app@qualimetry-ai
+      #
+      # When OpenAI ships the publish API, replace this comment with the real
+      # publish step (likely: `codex plugin publish <tarball>` authenticated by
+      # OPENAI_CODEX_PUBLISH_TOKEN).

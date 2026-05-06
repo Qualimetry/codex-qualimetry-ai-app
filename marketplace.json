@@ -1,0 +1,19 @@
+{
+  "name": "qualimetry-ai",
+  "interface": {
+    "displayName": "Qualimetry AI"
+  },
+  "description": "Qualimetry AI App: enforces coding standards, principles, policies, and surfaces AI review and rules-based analysis findings inside OpenAI Codex.",
+  "owner": {
+    "name": "Qualimetry",
+    "email": "support@qualimetry.com"
+  },
+  "homepage": "https://qualimetry.ai",
+  "repository": "https://github.com/Qualimetry/codex-qualimetry-ai-app",
+  "plugins": [
+    {
+      "name": "qualimetry-ai-app",
+      "source": "."
+    }
+  ]
+}
