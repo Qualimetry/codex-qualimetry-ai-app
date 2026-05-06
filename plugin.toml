@@ -1,0 +1,27 @@
+[plugin]
+name = "qualimetry-ai-app"
+version = "1.0.0"
+description = "Enforces Qualimetry coding standards, principles, policies, and surfaces AI review + rules-based analysis findings inside OpenAI Codex."
+homepage = "https://www.qualimetry.com"
+repository = "https://github.com/Qualimetry/codex-qualimetry-ai-app"
+license = "Apache-2.0"
+authors = ["Qualimetry <support@qualimetry.com>"]
+keywords = ["qualimetry", "code-review", "compliance", "mcp"]
+
+[plugin.skills]
+# Skills directories bundled with the plugin. Codex copies these to ~/.agents/skills/
+# (the universal Agent Skills path) on install.
+paths = ["./skills"]
+
+[plugin.commands]
+paths = ["./commands"]
+
+[plugin.hooks]
+on_read = "./hooks/on-read.sh"
+
+[plugin.mcp_servers.qualimetry]
+# Codex reads ~/.codex/config.toml at launch; the install flow writes the URL
+# and qualimetry-access-token into [mcp_servers.qualimetry] there. The plugin
+# doesn't ship credentials.
+url = "PLACEHOLDER_RUN_QUALIMETRY_SETUP"
+http_headers = { "qualimetry-access-token" = "PLACEHOLDER_RUN_QUALIMETRY_SETUP" }

@@ -1,0 +1,98 @@
+name: CI (OpenAI Codex plugin)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Validate plugin.toml shape
+        run: |
+          # Minimal TOML sanity check: required keys exist
+          for k in 'name = ' 'version = ' 'description = ' '[plugin]'; do
+            grep -q "$k" plugin.toml || (echo "plugin.toml missing: $k" && exit 1)
+          done
+          echo "plugin.toml looks OK."
+
+      - name: Lint hook scripts
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y shellcheck jq
+          find . -name '*.sh' -not -path './skills/*' -print0 | xargs -0 shellcheck || true
+
+      - name: Smoke-check skills are present
+        run: |
+          for s in coding-standards review-check analysis-issues dependency-check; do
+            test -f "skills/$s/SKILL.md" || (echo "Missing skill: $s" && exit 1)
+          done
+          echo "All four skills present."
+
+  release:
+    needs: validate
+    if: startsWith(github.event.head_commit.message, 'release:') || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -oP '^version = "\K[^"]+' plugin.toml | head -1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Codex plugin tarball
+        run: |
+          TARBALL="qualimetry-ai-app-${{ steps.version.outputs.version }}-codex.tar.gz"
+          tar --exclude='.git' --exclude='node_modules' --exclude='*.tar.gz' \
+              -czf "$TARBALL" plugin.toml skills commands hooks config.snippet.toml
+          echo "tarball=$TARBALL" >> $GITHUB_ENV
+
+      - name: Extract release notes (fallback to commit message)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ -f CHANGELOG.md ]; then
+            awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md > release-notes.md
+          fi
+          if [ ! -s release-notes.md ]; then
+            echo "Release ${{ steps.version.outputs.version }}" > release-notes.md
+            echo "" >> release-notes.md
+            echo "${{ github.event.head_commit.message }}" >> release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: ${{ env.tarball }}
+
+      # Codex plugin marketplace publish step. The exact CLI command depends on
+      # the OpenAI Codex publishing flow (subject to change). When Codex's
+      # publish API stabilises, replace this stub with the real command.
+      - name: Publish to OpenAI Codex marketplace
+        run: |
+          if [ -n "${{ secrets.OPENAI_CODEX_PUBLISH_TOKEN }}" ]; then
+            echo "TODO: invoke Codex publish CLI with the tarball + token here."
+            echo "Tarball: $tarball"
+          else
+            echo "OPENAI_CODEX_PUBLISH_TOKEN not configured; skipping marketplace publish."
+            echo "Users can still install via the GitHub release tarball."
+          fi
+        env:
+          tarball: ${{ env.tarball }}
