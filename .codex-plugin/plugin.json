@@ -1,0 +1,18 @@
+{
+  "name": "qualimetry-ai-app",
+  "version": "1.1.1",
+  "description": "Enforces Qualimetry coding standards, principles, policies, and surfaces AI review + rules-based analysis findings inside OpenAI Codex.",
+  "author": {
+    "name": "Qualimetry",
+    "email": "support@qualimetry.com"
+  },
+  "homepage": "https://qualimetry.ai",
+  "repository": "https://github.com/Qualimetry/codex-qualimetry-ai-app",
+  "license": "Apache-2.0",
+  "keywords": ["qualimetry", "code-review", "compliance", "mcp"],
+  "skills": "./skills",
+  "commands": "./commands",
+  "hooks": {
+    "on_read": "./hooks/on-read.sh"
+  }
+}
