@@ -1,0 +1,24 @@
+{
+  "name": "qualimetry-ai",
+  "interface": {
+    "displayName": "Qualimetry AI"
+  },
+  "description": "Qualimetry AI App: enforces coding standards, principles, policies, and surfaces AI review and rules-based analysis findings inside OpenAI Codex.",
+  "owner": {
+    "name": "Qualimetry",
+    "email": "support@qualimetry.com"
+  },
+  "homepage": "https://qualimetry.ai",
+  "repository": "https://github.com/Qualimetry/codex-qualimetry-ai-app",
+  "plugins": [
+    {
+      "name": "qualimetry-ai-app",
+      "source": {
+        "source": "local",
+        "path": "./plugins/qualimetry-ai-app"
+      },
+      "description": "Bundles the Qualimetry skills, a PostToolUse hook that surfaces review findings the moment a reviewed file is opened, and the qualimetry-setup workflow for registering the Qualimetry MCP server.",
+      "category": "Code Quality"
+    }
+  ]
+}

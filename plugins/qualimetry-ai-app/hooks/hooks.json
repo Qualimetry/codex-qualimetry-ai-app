@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${PLUGIN_ROOT}/hooks/on-read.sh\"",
+            "command_windows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${PLUGIN_ROOT}\\hooks\\on-read.ps1\"",
+            "statusMessage": "Checking Qualimetry findings"
+          }
+        ]
+      }
+    ]
+  }
+}
