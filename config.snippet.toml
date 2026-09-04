@@ -1,0 +1,8 @@
+# Drop-in snippet for ~/.codex/config.toml — registers the Qualimetry MCP server.
+# The /qualimetry-setup command (or the install/qualimetry-setup script) writes
+# this section automatically with the user's URL + token. Manual users can
+# paste it themselves and edit the two values.
+
+[mcp_servers.qualimetry]
+url = "https://myorg.qualimetry.io/mcp/"
+http_headers = { "qualimetry-access-token" = "REPLACE_WITH_YOUR_QUALIMETRY_ACCESS_TOKEN" }

@@ -1,0 +1,14 @@
+# Normalise all text files to LF in the repository and on checkout.
+# This overrides any per-machine core.autocrlf setting so that the
+# GitHub snapshot byte-format stays identical regardless of which
+# developer's workstation runs publish-*-to-github.ps1.
+* text=auto eol=lf
+
+# Truly binary files - never touch these.
+*.jar binary
+*.zip binary
+*.png binary
+*.gif binary
+*.ico binary
+*.sqlite binary
+*.vsix binary
