@@ -1,0 +1,18 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Node / VS Code extension build artefacts
+node_modules/
+vscode-client/dist/
+vscode-client/out/
+vscode-client/*.vsix
+
+# Temporary
+*.tmp
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
